@@ -15,7 +15,6 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.provider.MediaStore.Images.ImageColumns;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -30,11 +29,10 @@ import com.facepp.http.PostParameters;
  * Use the facepp api to detect<br />
  * Find all face on the picture, and mark them out.
  * 
- * @author moon5ckq
+ * @author shenyonghe
  */
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements OnClickListener {
 
-	final private static String TAG = "MainActivity";
 	final private int PICTURE_CHOOSE = 1;
 
 	private ImageView imageView = null;
@@ -46,124 +44,21 @@ public class MainActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		initViews();
+	}
 
-		Button button = (Button) this.findViewById(R.id.button1);
-		button.setOnClickListener(new OnClickListener() {
-
-			public void onClick(View arg0) {
-				// get a picture form your phone
-				Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-				photoPickerIntent.setType("image/*");
-				startActivityForResult(photoPickerIntent, PICTURE_CHOOSE);
-			}
-		});
-
+	private void initViews() {
+		Button getImage = (Button) this.findViewById(R.id.btn_getImage);
+		getImage.setOnClickListener(this);
 		textView = (TextView) this.findViewById(R.id.textView1);
-
-		buttonDetect = (Button) this.findViewById(R.id.button2);
+		buttonDetect = (Button) this.findViewById(R.id.btn_detect);
 		buttonDetect.setVisibility(View.INVISIBLE);
-		buttonDetect.setOnClickListener(new OnClickListener() {
-			public void onClick(View arg0) {
-
-				textView.setText("Waiting ...");
-
-				FaceppDetect faceppDetect = new FaceppDetect();
-				faceppDetect.setDetectCallback(new DetectCallback() {
-
-					public void detectResult(JSONObject rst) {
-						// Log.v(TAG, rst.toString());
-						System.out.println("get face Info:\n" + rst);
-
-						// use the red paint
-						Paint paint = new Paint();
-						paint.setColor(Color.RED);
-						paint.setStrokeWidth(Math.max(img.getWidth(),
-								img.getHeight()) / 100f);
-
-						// create a new canvas
-						Bitmap bitmap = Bitmap.createBitmap(img.getWidth(),
-								img.getHeight(), img.getConfig());
-						Canvas canvas = new Canvas(bitmap);
-						canvas.drawBitmap(img, new Matrix(), null);
-						try {
-							// find out all faces
-							final int count = rst.getJSONArray("face").length();
-							final int[] age = new int[count];
-							for (int i = 0; i < count; ++i) {
-								float x, y, w, h;
-								// get the center point
-								x = (float) rst.getJSONArray("face")
-										.getJSONObject(i)
-										.getJSONObject("position")
-										.getJSONObject("center").getDouble("x");
-								y = (float) rst.getJSONArray("face")
-										.getJSONObject(i)
-										.getJSONObject("position")
-										.getJSONObject("center").getDouble("y");
-								age[i] = (int) rst.getJSONArray("face")
-										.getJSONObject(i)
-										.getJSONObject("attribute")
-										.getJSONObject("age").getInt("value");
-								System.out.println("年龄:" + age[i]);
-								// get face size
-								w = (float) rst.getJSONArray("face")
-										.getJSONObject(i)
-										.getJSONObject("position")
-										.getDouble("width");
-								h = (float) rst.getJSONArray("face")
-										.getJSONObject(i)
-										.getJSONObject("position")
-										.getDouble("height");
-
-								// change percent value to the real size
-								x = x / 100 * img.getWidth();
-								w = w / 100 * img.getWidth() * 0.7f;
-								y = y / 100 * img.getHeight();
-								h = h / 100 * img.getHeight() * 0.7f;
-
-								// draw the box to mark it out
-								canvas.drawLine(x - w, y - h, x - w, y + h,
-										paint);
-								canvas.drawLine(x - w, y - h, x + w, y - h,
-										paint);
-								canvas.drawLine(x + w, y + h, x - w, y + h,
-										paint);
-								canvas.drawLine(x + w, y + h, x + w, y - h,
-										paint);
-							}
-
-							// save new image
-							img = bitmap;
-
-							MainActivity.this.runOnUiThread(new Runnable() {
-
-								public void run() {
-									// show the image
-									imageView.setImageBitmap(img);
-									textView.setText("你看起来只有" + age[0] + "岁哦!");
-								}
-							});
-
-						} catch (JSONException e) {
-							e.printStackTrace();
-							MainActivity.this.runOnUiThread(new Runnable() {
-								public void run() {
-									textView.setText("Error.");
-								}
-							});
-						}
-
-					}
-				});
-				faceppDetect.detect(img);
-			}
-		});
-
+		buttonDetect.setOnClickListener(this);
 		imageView = (ImageView) this.findViewById(R.id.imageView1);
 		imageView.setImageBitmap(img);
 	}
 
-	@Override
+	// 选取图片
 	protected void onActivityResult(int requestCode, int resultCode,
 			Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
@@ -171,21 +66,15 @@ public class MainActivity extends Activity {
 		// the image picker callback
 		if (requestCode == PICTURE_CHOOSE) {
 			if (intent != null) {
-				// The Android api ~~~
-				// Log.d(TAG, "idButSelPic Photopicker: " +
-				// intent.getDataString());
 				Cursor cursor = getContentResolver().query(intent.getData(),
 						null, null, null, null);
 				cursor.moveToFirst();
 				int idx = cursor.getColumnIndex(ImageColumns.DATA);
 				String fileSrc = cursor.getString(idx);
-				// Log.d(TAG, "Picture:" + fileSrc);
 
-				// just read size
 				Options options = new Options();
 				options.inJustDecodeBounds = true;
 				img = BitmapFactory.decodeFile(fileSrc, options);
-
 				// scale size to read
 				options.inSampleSize = Math.max(1, (int) Math.ceil(Math.max(
 						(double) options.outWidth / 1024f,
@@ -197,7 +86,7 @@ public class MainActivity extends Activity {
 				imageView.setImageBitmap(img);
 				buttonDetect.setVisibility(View.VISIBLE);
 			} else {
-				Log.d(TAG, "idButSelPic Photopicker canceled");
+				System.out.println("idButSelPic Photopicker canceled");
 			}
 		}
 	}
@@ -217,8 +106,6 @@ public class MainActivity extends Activity {
 					HttpRequests httpRequests = new HttpRequests(
 							"59201af14f9820236ad794d22f89345b",
 							"LnXzQHuLSMFSHPjGMrIpjpwpx8c0fm8q", true, false);
-					// Log.v(TAG, "image size : " + img.getWidth() + " " +
-					// img.getHeight());
 
 					ByteArrayOutputStream stream = new ByteArrayOutputStream();
 					float scale = Math.min(
@@ -230,8 +117,6 @@ public class MainActivity extends Activity {
 
 					Bitmap imgSmall = Bitmap.createBitmap(img, 0, 0,
 							img.getWidth(), img.getHeight(), matrix, false);
-					// Log.v(TAG, "imgSmall size : " + imgSmall.getWidth() + " "
-					// + imgSmall.getHeight());
 
 					imgSmall.compress(Bitmap.CompressFormat.JPEG, 100, stream);
 					byte[] array = stream.toByteArray();
@@ -259,7 +144,103 @@ public class MainActivity extends Activity {
 		}
 	}
 
-	interface DetectCallback {
+	// 定义获取到图片信息后的回调接口
+	public interface DetectCallback {
 		void detectResult(JSONObject rst);
 	}
+
+	//获取到图片信息后的处理
+	DetectCallback detectCallback = new DetectCallback() {
+
+		public void detectResult(JSONObject rst) {
+			System.out.println("get face Info:\n" + rst);
+			// use the red paint
+			Paint paint = new Paint();
+			paint.setColor(Color.RED);
+			paint.setStrokeWidth(Math.max(img.getWidth(), img.getHeight()) / 100f);
+			// create a new canvas
+			Bitmap bitmap = Bitmap.createBitmap(img.getWidth(),
+					img.getHeight(), img.getConfig());
+			Canvas canvas = new Canvas(bitmap);
+			canvas.drawBitmap(img, new Matrix(), null);
+			try {
+				// find out all faces
+				final int count = rst.getJSONArray("face").length();
+				final int[] age = new int[count];
+				for (int i = 0; i < count; ++i) {
+					float x, y, w, h;
+					// get the center point
+					x = (float) rst.getJSONArray("face").getJSONObject(i)
+							.getJSONObject("position").getJSONObject("center")
+							.getDouble("x");
+					y = (float) rst.getJSONArray("face").getJSONObject(i)
+							.getJSONObject("position").getJSONObject("center")
+							.getDouble("y");
+					int value = (int) rst.getJSONArray("face").getJSONObject(i)
+							.getJSONObject("attribute").getJSONObject("age")
+							.getInt("value");
+					int range = (int) rst.getJSONArray("face").getJSONObject(i)
+							.getJSONObject("attribute").getJSONObject("age")
+							.getInt("range");
+					age[i] = value + range;
+					System.out.println("年龄:" + age[i]);
+					// get face size
+					w = (float) rst.getJSONArray("face").getJSONObject(i)
+							.getJSONObject("position").getDouble("width");
+					h = (float) rst.getJSONArray("face").getJSONObject(i)
+							.getJSONObject("position").getDouble("height");
+
+					// change percent value to the real size
+					x = x / 100 * img.getWidth();
+					w = w / 100 * img.getWidth() * 0.7f;
+					y = y / 100 * img.getHeight();
+					h = h / 100 * img.getHeight() * 0.7f;
+
+					// draw the box to mark it out
+					canvas.drawLine(x - w, y - h, x - w, y + h, paint);
+					canvas.drawLine(x - w, y - h, x + w, y - h, paint);
+					canvas.drawLine(x + w, y + h, x - w, y + h, paint);
+					canvas.drawLine(x + w, y + h, x + w, y - h, paint);
+				}
+				// save new image
+				img = bitmap;
+				MainActivity.this.runOnUiThread(new Runnable() {
+
+					public void run() {
+						// show the image
+						imageView.setImageBitmap(img);
+						textView.setText("你看起来只有" + age[0] + "岁哦!");
+					}
+				});
+
+			} catch (JSONException e) {
+				e.printStackTrace();
+				MainActivity.this.runOnUiThread(new Runnable() {
+					public void run() {
+						textView.setText("Error.");
+					}
+				});
+			}
+
+		}
+	};
+
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.btn_getImage:
+			// get a picture form your phone
+			Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+			photoPickerIntent.setType("image/*");
+			startActivityForResult(photoPickerIntent, PICTURE_CHOOSE);
+			break;
+
+		case R.id.btn_detect:
+			textView.setText("Waiting ...");
+			FaceppDetect faceppDetect = new FaceppDetect();
+			faceppDetect.setDetectCallback(detectCallback);
+			faceppDetect.detect(img);
+			break;
+		}
+	}
+
 }

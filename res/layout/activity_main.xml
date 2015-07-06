@@ -4,7 +4,7 @@
     android:layout_height="match_parent" >
 
     <Button
-        android:id="@+id/button1"
+        android:id="@+id/btn_getImage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -16,18 +16,18 @@
         android:id="@+id/imageView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/button1"
+        android:layout_above="@+id/btn_getImage"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true" />
 
     <Button
-        android:id="@+id/button2"
+        android:id="@+id/btn_detect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginRight="10dp"
-        android:layout_toLeftOf="@+id/button1"
+        android:layout_toLeftOf="@+id/btn_getImage"
         android:text="Detect" />
 
     <TextView
@@ -36,8 +36,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignTop="@+id/button2"
-        android:layout_toLeftOf="@+id/button2"
+        android:layout_alignTop="@+id/btn_detect"
+        android:layout_toLeftOf="@+id/btn_detect"
         android:gravity="center_vertical|center_horizontal"
         android:text="state"
         android:textAppearance="?android:attr/textAppearanceMedium" />
